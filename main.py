@@ -23,135 +23,357 @@ async def health_check():
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
     return """
-    <html>
-        <head>
-            <style>
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px; color: #333; }
-                .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-                h2 { color: #2c3e50; text-align: center; }
-                label { font-weight: bold; margin-top: 15px; display: block; }
-                input[type="file"], textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
-                button { background-color: #2980b9; color: white; border: none; padding: 12px 20px; margin-top: 20px; cursor: pointer; width: 100%; border-radius: 5px; font-size: 16px; font-weight: bold; }
-                button:hover { background-color: #3498db; }
-                
-                /* Dashboard Styles */
-                #dashboard { display: none; margin-top: 30px; padding-top: 30px; border-top: 2px solid #eee; }
-                .score-box { text-align: center; margin-bottom: 20px; }
-                #scoreText { font-size: 48px; margin: 0; }
-                .skills-container { display: flex; justify-content: space-between; gap: 20px; }
-                .skill-box { flex: 1; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
-                .skill-box h4 { margin-top: 0; text-align: center; }
-                .match-list { color: #27ae60; list-style-type: none; padding: 0; }
-                .missing-list { color: #e74c3c; list-style-type: none; padding: 0; }
-                li { padding: 5px 0; border-bottom: 1px solid #eee; }
-                li:last-child { border-bottom: none; }
-                
-                /* Loading Spinner */
-                #loader { display: none; text-align: center; margin-top: 20px; font-weight: bold; color: #2980b9; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h2>🚀 AI Resume Scanner</h2>
-                
-                <form id="scannerForm">
-                    <label>1. Upload Resume (PDF):</label>
-                    <input type="file" id="resumeFile" name="resume_pdf" accept=".pdf" required>
-                    
-                    <label>2. Paste Job Description:</label>
-                    <textarea id="jdText" name="job_description" rows="6" required placeholder="Paste the job requirements here..."></textarea>
-                    
-                    <button type="submit" id="submitBtn">Analyze Match</button>
-                </form>
-
-                <div id="loader">🧠 Analyzing with NLP Engine... Please wait.</div>
-
-                <div id="dashboard">
-                    <div class="score-box">
-                        <h3>Match Score</h3>
-                        <h1 id="scoreText">0%</h1>
-                    </div>
-                    
-                    <div class="skills-container">
-                        <div class="skill-box">
-                            <h4>✅ Skills Matched (<span id="matchCount">0</span>)</h4>
-                            <ul id="matchedList" class="match-list"></ul>
-                        </div>
-                        <div class="skill-box">
-                            <h4>❌ Skills Missing (<span id="missingCount">0</span>)</h4>
-                            <ul id="missingList" class="missing-list"></ul>
-                        </div>
-                    </div>
-                </div>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>The Resume Scanner</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+        <style>
+            :root {
+                --primary: #6366f1;
+                --primary-hover: #4f46e5;
+                --bg: #0f172a;
+                --surface: #1e293b;
+                --text: #f8fafc;
+                --text-muted: #94a3b8;
+                --border: #334155;
+                --success: #10b981;
+            }
+            body {
+                font-family: 'Inter', sans-serif;
+                background-color: var(--bg);
+                color: var(--text);
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background-image: radial-gradient(circle at top right, #1e1b4b, var(--bg));
+            }
+            .container {
+                width: 100%;
+                max-width: 600px;
+                background: rgba(30, 41, 59, 0.7);
+                backdrop-filter: blur(16px);
+                padding: 40px;
+                border-radius: 24px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                transition: transform 0.3s ease;
+                box-sizing: border-box;
+            }
+            h2 {
+                text-align: center;
+                font-weight: 700;
+                font-size: 2.5rem;
+                margin-top: 0;
+                margin-bottom: 10px;
+                background: linear-gradient(135deg, #a5b4fc, #818cf8);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            p.subtitle {
+                text-align: center;
+                color: var(--text-muted);
+                margin-bottom: 30px;
+            }
+            .form-group {
+                margin-bottom: 24px;
+            }
+            label {
+                display: block;
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: #e2e8f0;
+            }
+            input[type="file"], textarea {
+                width: 100%;
+                padding: 12px 16px;
+                background: rgba(15, 23, 42, 0.6);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                color: var(--text);
+                font-family: 'Inter', sans-serif;
+                box-sizing: border-box;
+                transition: border-color 0.2s, box-shadow 0.2s;
+            }
+            input[type="file"]:focus, textarea:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            }
+            textarea {
+                resize: vertical;
+                min-height: 120px;
+            }
+            button {
+                width: 100%;
+                padding: 14px;
+                background: linear-gradient(135deg, var(--primary), #818cf8);
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 1.1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+            }
+            button:active {
+                transform: translateY(0);
+            }
+            .hidden {
+                display: none !important;
+            }
+            #loader {
+                text-align: center;
+                margin-top: 20px;
+            }
+            .spinner {
+                border: 4px solid rgba(255, 255, 255, 0.1);
+                border-left-color: var(--primary);
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 10px auto;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            #results {
+                margin-top: 20px;
+                background: rgba(15, 23, 42, 0.8);
+                border-radius: 16px;
+                padding: 30px;
+                border: 1px solid rgba(16, 185, 129, 0.3);
+                animation: fadeIn 0.5s ease-out;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .score-container {
+                text-align: center;
+                margin-bottom: 24px;
+            }
+            .score-circle {
+                width: 120px;
+                height: 120px;
+                border-radius: 50%;
+                background: conic-gradient(var(--success) 0%, transparent 0%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 16px auto;
+                position: relative;
+                transition: background 1s ease-out;
+            }
+            .score-inner {
+                width: 100px;
+                height: 100px;
+                background: var(--surface);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 2rem;
+                font-weight: 700;
+                color: var(--success);
+            }
+            .stat-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 12px 0;
+                border-bottom: 1px solid var(--border);
+            }
+            .stat-row:last-child {
+                border-bottom: none;
+            }
+            .skills-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 16px;
+            }
+            .skill-tag {
+                background: rgba(99, 102, 241, 0.2);
+                color: #a5b4fc;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 0.875rem;
+                font-weight: 600;
+                border: 1px solid rgba(99, 102, 241, 0.3);
+            }
+            #error-message {
+                color: #ef4444;
+                background: rgba(239, 68, 68, 0.1);
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 20px;
+                border: 1px solid rgba(239, 68, 68, 0.3);
+                text-align: center;
+            }
+            .back-btn {
+                background: transparent;
+                border: 1px solid var(--border);
+                margin-top: 20px;
+            }
+            .back-btn:hover {
+                background: rgba(255, 255, 255, 0.05);
+                box-shadow: none;
+            }
+            /* Responsive */
+            @media (max-width: 640px) {
+                .container {
+                    padding: 20px;
+                    margin: 20px;
+                    border-radius: 16px;
+                }
+                h2 {
+                    font-size: 2rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1 style="text-align: center;">THE RESUME SCANNER</h1>
+        
+            
+            <div id="homePage">
+                <p style="text-align: center; color: var(--text); margin-bottom: 30px; font-size: 1.1rem; line-height: 1.6;">
+                    Upload your resume and the job description to instantly see how well you match the role. Find missing skills and optimize your chances!
+                </p>
+                <button id="startBtn" onclick="startScanner()" style="padding: 16px; font-size: 1.2rem;">Get Started</button>
             </div>
 
-            <script>
-                document.getElementById('scannerForm').addEventListener('submit', async function(event) {
-                    event.preventDefault(); // Stop page reload
+            <form id="uploadForm" class="hidden">
+                <div class="form-group">
+                    <label for="resume_pdf">1. Upload Resume (PDF)</label>
+                    <input type="file" id="resume_pdf" name="resume_pdf" accept=".pdf" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="job_description">2. Paste Job Description</label>
+                    <textarea id="job_description" name="job_description" placeholder="Paste the job requirements here..." required></textarea>
+                </div>
+                
+                <button type="submit" id="submitBtn">Analyze Resume</button>
+            </form>
+
+            <div id="loader" class="hidden">
+                <div class="spinner"></div>
+                <p>Analyzing document...</p>
+            </div>
+
+            <div id="error-message" class="hidden"></div>
+
+            <div id="results" class="hidden">
+                <div class="score-container">
+                    <div class="score-circle" id="scoreCircle">
+                        <div class="score-inner" id="scoreValue">0%</div>
+                    </div>
+                    <h3>Match Score</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">File: <span id="fileName"></span></p>
+                </div>
+                
+                <div class="stat-row">
+                    <span>Matched Skills</span>
+                    <strong id="matchedCount">0</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Total Job Skills</span>
+                    <strong id="totalSkills">0</strong>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <h4>Skills Found</h4>
+                    <div class="skills-list" id="skillsList"></div>
+                </div>
+
+                <button class="back-btn" onclick="resetForm()">Analyze Another Resume</button>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const form = e.target;
+                const formData = new FormData(form);
+                
+                const loader = document.getElementById('loader');
+                const results = document.getElementById('results');
+                const errorDiv = document.getElementById('error-message');
+                
+                form.classList.add('hidden');
+                errorDiv.classList.add('hidden');
+                loader.classList.remove('hidden');
+                
+                try {
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        body: formData
+                    });
                     
-                    // UI Polish: Show loader, hide dashboard
-                    document.getElementById('loader').style.display = "block";
-                    document.getElementById('dashboard').style.display = "none";
-                    document.getElementById('submitBtn').disabled = true;
-
-                    // Pack the data
-                    let formData = new FormData();
-                    formData.append("resume_pdf", document.getElementById('resumeFile').files[0]);
-                    formData.append("job_description", document.getElementById('jdText').value);
-
-                    try {
-                        // Call the API
-                        let response = await fetch('/api/analyze', {
-                            method: 'POST',
-                            body: formData
-                        });
-
-                        if (!response.ok) {
-                            let errorData = await response.json();
-                            alert("Error: " + errorData.detail);
-                            throw new Error("API Error");
-                        }
-
-                        let data = await response.json();
-
-                        // Update Score & Colors
-                        let scoreEl = document.getElementById('scoreText');
-                        scoreEl.innerText = data.match_score + "%";
-                        if (data.match_score >= 70) scoreEl.style.color = "#27ae60"; // Green
-                        else if (data.match_score >= 40) scoreEl.style.color = "#f39c12"; // Orange
-                        else scoreEl.style.color = "#e74c3c"; // Red
-
-                        // Update Counts
-                        document.getElementById('matchCount').innerText = data.matched_count;
-                        document.getElementById('missingCount').innerText = data.missing_skills.length;
-
-                        // Populate Matched Skills Array
-                        let matchedHTML = "";
-                        data.matched_skills.forEach(skill => {
-                            matchedHTML += `<li>✅ ${skill.toUpperCase()}</li>`;
-                        });
-                        document.getElementById('matchedList').innerHTML = matchedHTML;
-
-                        // Populate Missing Skills Array
-                        let missingHTML = "";
-                        data.missing_skills.forEach(skill => {
-                            missingHTML += `<li>❌ ${skill.toUpperCase()}</li>`;
-                        });
-                        document.getElementById('missingList').innerHTML = missingHTML;
-
-                        // Show the Dashboard!
-                        document.getElementById('dashboard').style.display = "block";
-
-                    } catch (error) {
-                        console.error(error);
-                    } finally {
-                        // Cleanup UI
-                        document.getElementById('loader').style.display = "none";
-                        document.getElementById('submitBtn').disabled = false;
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.detail || 'Something went wrong');
                     }
-                });
-            </script>
-        </body>
+                    
+                    document.getElementById('scoreValue').textContent = data.match_score + '%';
+                    document.getElementById('scoreCircle').style.background = `conic-gradient(var(--success) ${data.match_score}%, rgba(255,255,255,0.05) 0%)`;
+                    
+                    document.getElementById('fileName').textContent = data.filename;
+                    document.getElementById('matchedCount').textContent = data.matched_count;
+                    document.getElementById('totalSkills').textContent = data.total_jd_skills;
+                    
+                    const skillsList = document.getElementById('skillsList');
+                    skillsList.innerHTML = '';
+                    if (data.matched_skills && data.matched_skills.length > 0) {
+                        data.matched_skills.forEach(skill => {
+                            const span = document.createElement('span');
+                            span.className = 'skill-tag';
+                            span.textContent = skill;
+                            skillsList.appendChild(span);
+                        });
+                    } else {
+                        skillsList.innerHTML = '<span style="color: var(--text-muted); font-size: 0.9rem;">No matching skills found.</span>';
+                    }
+                    
+                    loader.classList.add('hidden');
+                    results.classList.remove('hidden');
+                    
+                } catch (err) {
+                    loader.classList.add('hidden');
+                    form.classList.remove('hidden');
+                    errorDiv.textContent = err.message;
+                    errorDiv.classList.remove('hidden');
+                }
+            });
+
+            function startScanner() {
+                document.getElementById('homePage').classList.add('hidden');
+                document.getElementById('uploadForm').classList.remove('hidden');
+            }
+
+            function resetForm() {
+                document.getElementById('uploadForm').reset();
+                document.getElementById('results').classList.add('hidden');
+                document.getElementById('homePage').classList.remove('hidden');
+                document.getElementById('error-message').classList.add('hidden');
+            }
+        </script>
+    </body>
     </html>
     """
 
